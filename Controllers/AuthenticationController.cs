@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using courses_platform.Dtos;
 using courses_platform.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 //using courses_platform.Models;
@@ -16,6 +17,7 @@ namespace courses_platform.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [AllowAnonymous]
     public class AuthenticationController : ControllerBase
     {
         public CoursesDbContext _context;
@@ -94,6 +96,7 @@ namespace courses_platform.Controllers
         {
             List<Claim> claims = new List<Claim>
             {
+                new Claim(ClaimTypes.Role, "Admin"),
                 new Claim(ClaimTypes.Name, user.Username),
             };
 
