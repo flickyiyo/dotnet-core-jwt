@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using courses_platform.Models;
 
@@ -10,9 +11,10 @@ using courses_platform.Models;
 namespace courses_platform.Migrations
 {
     [DbContext(typeof(CoursesDbContext))]
-    partial class CoursesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20211222081007_Initial")]
+    partial class Initial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

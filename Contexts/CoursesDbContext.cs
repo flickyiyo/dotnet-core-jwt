@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace courses_platform.Models
@@ -14,6 +15,8 @@ namespace courses_platform.Models
         public CoursesDbContext(DbContextOptions<CoursesDbContext> options) : base(options) { }
         public DbSet<User> Users { get; set; }
         public DbSet<Course> Courses { get; set; }
+        public DbSet<Lesson> Lessons { get; set; }
+        public DbSet<Resource> Resources { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -21,7 +24,7 @@ namespace courses_platform.Models
                 .HasIndex(u => u.Email)
                 .IsUnique();
             modelBuilder.Entity<User>()
-                .HasIndex(u => u.Username)
+                .HasIndex(u => u.UserName)
                 .IsUnique();
             
             

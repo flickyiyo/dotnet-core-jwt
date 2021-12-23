@@ -11,7 +11,9 @@ using courses_platform.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-//using courses_platform.Models;
+using courses_platform.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace courses_platform.Controllers
 {
@@ -22,37 +24,66 @@ namespace courses_platform.Controllers
     {
         public CoursesDbContext _context;
         private readonly IConfiguration _config;
-        public AuthenticationController(CoursesDbContext context, IConfiguration config)
+        private readonly UserManager<User> _userManager;
+        private readonly SignInManager<User> _signInManager;
+
+        public AuthenticationController(CoursesDbContext context,
+                                        IConfiguration config,
+                                        UserManager<User> userManager,
+                                        SignInManager<User> signInManager)
         {
-            this._config = config;
             _context = context;
+            _config = config;
+            this._userManager = userManager;
+            this._signInManager = signInManager;
         }
 
+        // public AuthenticationController(CoursesDbContext context,
+        //                                 IConfiguration config)
+        // {
+        //     _context = context;
+        //     _config = config;
+        //     // this.userManager = userManager;
+        //     // this.signInManager = signInManager;
+        // }
+
         [HttpPost("register")]
+        // [ValidateAntiForgeryToken]
         public async Task<ActionResult> Register(RegisterUserDto request)
         {
             CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
 
-            var user = new User{
+            var user = new User
+            {
                 PasswordSalt = passwordSalt,
-                Password = passwordHash,
-                Username = request.Username,
-                FirstName = request.FirstName,
-                LastName = request.LastName,
+                PasswordHash = Encoding.UTF8.GetString(passwordHash),
+                UserName = request.Username,
+                // FirstName = request.FirstName,
+                // LastName = request.LastName,
                 Email = request.Email,
                 PhoneRegionCode = request.PhoneRegionCode,
                 Phone = request.Phone,
+                // Roles = new List<Role>{ Role.FREE_STUDENT }
             };
 
             try
             {
-                _context.Users.Add(user);
-                _context.SaveChanges();
-                return Created($"/users/{user.Id}", new {
-                    Id = user.Id
-                });
+                Console.WriteLine(user.Email);
+                var result = await _userManager.CreateAsync(user, user.PasswordHash);
+                
+                if (result.Succeeded)
+                {
+                    Console.WriteLine(Url.Action(user.Id));
+                    return Created(Url.Action(user.Id), new UserDto{ Id = user.Id, Email = user.Email });
+                }
+                var errorMessages = new List<string>();
+                foreach(var err in result.Errors)
+                {
+                    errorMessages.Add(err.Description);
+                }
+                return StatusCode(400, errorMessages);
             }
-            catch (Exception ex)
+            catch (DbUpdateException ex)
             {
                 return StatusCode(500, "Could Not create user");
             }
@@ -65,7 +96,7 @@ namespace courses_platform.Controllers
 
             if (foundUser != null)
             {
-                if (VerifyPasswordHash(request.Password, foundUser.Password, foundUser.PasswordSalt))
+                if (VerifyPasswordHash(request.Password, Encoding.UTF8.GetBytes(foundUser.PasswordHash), foundUser.PasswordSalt))
                 {
                     return Ok(new { token = CreateToken(foundUser) });
                 }
@@ -96,9 +127,14 @@ namespace courses_platform.Controllers
         {
             List<Claim> claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Role, "Admin"),
-                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Name, user.UserName),
+                new Claim(ClaimTypes.Email, user.Email)
             };
+
+            // foreach (Role role in user.Roles)
+            // {
+            claims.Add(new Claim(ClaimTypes.Role, Role.ADMIN.ToString()));
+            // }
 
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_config["JwtSettings:SignKey"])

@@ -9,5 +9,7 @@ namespace courses_platform.Models
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public string Name { get; set; }
+        public string Slug { get; set; }
+        public ICollection<Lesson> Lessons { get; set; }
     }
 }
