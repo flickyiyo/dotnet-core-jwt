@@ -18,7 +18,7 @@ namespace courses_platform.Models
         // public string LastName { get; set; }
         public string Phone { get; set; }
         public string PhoneRegionCode { get; set; }
-        // // public string Role { get; set; }
+        // public string Role { get; set; }
         // public ICollection<UserLesson> UserLessons { get; set; }
     }
 }

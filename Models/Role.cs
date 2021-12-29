@@ -4,6 +4,9 @@ namespace courses_platform.Models
     {
         FREE_STUDENT,
         PAID_STUDENT,
+        TEACHER,
+        ASSISTANT,
+        MODERATOR,
         ADMIN,
     }
 }

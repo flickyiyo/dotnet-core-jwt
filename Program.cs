@@ -16,6 +16,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddMvc();
+builder.Host.ConfigureLogging(logging => {
+    logging.ClearProviders();
+    logging.AddConsole();
+});
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -48,7 +52,7 @@ builder.Services.AddIdentity<User, IdentityRole>(
     {
         // options.SignIn.RequireConfirmedAccount = true;
         options.Password.RequiredLength = 7;
-        options.User.RequireUniqueEmail = true;
+        // options.User.RequireUniqueEmail = true;
     }).AddEntityFrameworkStores<CoursesDbContext>();
 
 builder.Services.AddAntiforgery(options => options.HeaderName = "X-XSRF-TOKEN");

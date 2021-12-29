@@ -49,14 +49,14 @@ namespace courses_platform.Controllers
 
         [HttpPost("register")]
         // [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Register(RegisterUserDto request)
+        public async Task<ActionResult> Register([FromBody] RegisterUserDto request)
         {
             CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
 
             var user = new User
             {
                 PasswordSalt = passwordSalt,
-                PasswordHash = Encoding.UTF8.GetString(passwordHash),
+                PasswordHash = request.Password,
                 UserName = request.Username,
                 // FirstName = request.FirstName,
                 // LastName = request.LastName,
@@ -68,13 +68,11 @@ namespace courses_platform.Controllers
 
             try
             {
-                Console.WriteLine(user.Email);
                 var result = await _userManager.CreateAsync(user, user.PasswordHash);
                 
                 if (result.Succeeded)
                 {
-                    Console.WriteLine(Url.Action(user.Id));
-                    return Created(Url.Action(user.Id), new UserDto{ Id = user.Id, Email = user.Email });
+                    return Created(user.Id, new UserDto{ Username= user.UserName, Id = user.Id, Email = user.Email });
                 }
                 var errorMessages = new List<string>();
                 foreach(var err in result.Errors)
@@ -92,14 +90,16 @@ namespace courses_platform.Controllers
         [HttpPost("login")]
         public async Task<ActionResult> Login([FromBody] UserLoginDto request)
         {
-            var foundUser = _context.Users.FirstOrDefault(u => u.Email == request.Email);
 
-            if (foundUser != null)
+            var user = await _userManager.FindByNameAsync(request.UserName);
+            var result = await _signInManager.CheckPasswordSignInAsync(user, password: request.Password, false);
+
+            if (result.Succeeded)
             {
-                if (VerifyPasswordHash(request.Password, Encoding.UTF8.GetBytes(foundUser.PasswordHash), foundUser.PasswordSalt))
-                {
-                    return Ok(new { token = CreateToken(foundUser) });
-                }
+                return Ok(new JwtAuthResponse{
+                        Token = CreateToken(user),
+                        ExpiresIn = DateTime.Now.AddHours(2)
+                });
             }
 
             return NotFound();
@@ -123,17 +123,27 @@ namespace courses_platform.Controllers
             }
         }
 
+        private void GetHash(string password, out byte[] passwordHash, byte[] passwordSalt)
+        {
+            using (var hmac = new HMACSHA256(passwordSalt))
+            {
+                passwordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
+            }
+        }
+
         private string CreateToken(User user)
         {
             List<Claim> claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.UserName),
-                new Claim(ClaimTypes.Email, user.Email)
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, "ADMIN")
             };
 
             // foreach (Role role in user.Roles)
             // {
             claims.Add(new Claim(ClaimTypes.Role, Role.ADMIN.ToString()));
+            Console.WriteLine(Role.ADMIN.ToString());
             // }
 
             var key = new SymmetricSecurityKey(
